@@ -121,9 +121,10 @@ and is excluded from the headline ratios.
 ## Carrying this to practice
 
 The equity code is grouping-agnostic — it takes whatever grouping column it is
-given — so the same methodology transfers to a New Zealand corrections/health
-setting by swapping the US race categories for prioritised ethnicity (Māori,
-Pacific, Other). Applied there, three things carry over:
+given — so the same methodology extends to ethnicity-stratified equity
+monitoring in a New Zealand health context by swapping the US race categories for
+prioritised ethnicity (Māori, Pacific, Other). In that setting, three things
+carry over:
 
 - The **input-vs-audit distinction**: keep ethnicity out of the model, use it to
   measure equity. This resolves the common "we aren't allowed to use ethnicity"

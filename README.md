@@ -45,7 +45,7 @@ the **groupings for the fairness audit** — a variable can be a prohibited
 predictor and a required audit dimension at the same time. The audit finds the
 model is well calibrated within each group; selection-rate differences largely
 track genuine base-rate differences rather than bias. The model card documents
-how this transfers to a New Zealand corrections/health setting (prioritised
+how this transfers to a New Zealand health-equity setting (prioritised
 ethnicity, Te Mana Raraunga governance, a systems-not-deficit framing).
 
 ## Layout

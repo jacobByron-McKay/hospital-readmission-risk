@@ -286,7 +286,7 @@ a fairness audit that checks calibration and error rates across demographic
 groups, with an explicit account of the calibration-versus-equal-treatment
 trade-off. The whole thing is tested, containerised and served behind an API, and
 the fairness method transfers directly to measuring equity for Māori and Pacific
-populations in my own work."*
+populations in a New Zealand health context."*
 
 That paragraph is honest, senior, and covers correctness, communication,
 ethics/governance, and engineering — the things the roles you're targeting
