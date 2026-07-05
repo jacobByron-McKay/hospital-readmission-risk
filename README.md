@@ -7,6 +7,10 @@ careful senior workflow — leakage-aware preparation, calibration, explainabili
 a fairness audit, and honest reporting of a hard problem — not to chase a
 headline accuracy number.
 
+*One of a set of portfolio projects that demonstrate, on public data, techniques
+I apply in professional senior data-science work; work data is confidential, so
+these examples use open datasets.*
+
 ## Results (held-out test set)
 
 | Metric | Value |
