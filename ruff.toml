@@ -1,0 +1,5 @@
+[lint.per-file-ignores]
+# These modules set the matplotlib backend before importing pyplot, so imports
+# legitimately follow a statement.
+"src/evaluate.py" = ["E402"]
+"src/explain.py" = ["E402"]

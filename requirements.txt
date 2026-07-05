@@ -1,0 +1,12 @@
+pandas==2.3.3
+numpy==2.4.6
+scikit-learn==1.9.0
+lightgbm==4.6.0
+shap==0.52.0
+matplotlib==3.11.0
+joblib==1.5.3
+ucimlrepo==0.0.7
+fastapi
+uvicorn
+pydantic
+mlflow
