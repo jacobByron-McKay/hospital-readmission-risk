@@ -89,10 +89,9 @@ docker build -t readmission . && docker run -p 8000:8000 readmission
 ## A note on tooling
 
 This project was built with AI assistance. I used AI tools as a coding and
-research assistant to accelerate the build — the same AI-augmented workflow I use
-in my day-to-day analytics work (as I've used Copilot on my R NLP and tabular-ML
-projects). I directed the design decisions and reviewed and validated the
-results.
+research assistant to accelerate the build — the modern, AI-augmented workflow I
+use in my day-to-day analytics work. I directed the design decisions and reviewed
+and validated the results.
 
 ## Data
 
