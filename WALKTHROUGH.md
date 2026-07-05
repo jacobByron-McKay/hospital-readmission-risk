@@ -1,9 +1,7 @@
-# Walkthrough — how this project works, in plain English
+# How it works — a plain-English tour
 
-This is a guided tour of the whole project. The goal is that after reading it
-you understand *what* each piece does, *why* it's there, and can explain any of
-it in an interview without notes. No syntax memorising — just the ideas and the
-decisions. Read it top to bottom; it follows the order the code actually runs.
+A guided tour of the whole project: *what* each piece does, *why* it's there, and
+the decisions behind it. It follows the order the code actually runs.
 
 ## The one-paragraph version
 
@@ -71,11 +69,6 @@ into broad buckets like "circulatory", "respiratory", "diabetes"
 and `payer_code` (insurance type — a stand-in for wealth that we don't want a
 *clinical* risk score leaning on).
 
-> **If asked:** "How did you prevent data leakage?" → "The same patient recurs
-> in the dataset, so I collapsed to each patient's first admission so no one
-> spans train and test, and I removed encounters ending in death or hospice
-> because those patients can't be readmitted."
-
 ---
 
 ## 2. Preparing the features — `src/features.py`
@@ -95,19 +88,14 @@ be re-applied to new data automatically.
   category. Rare categories are folded into one "other" bucket so we don't
   create thousands of near-empty columns.
 
-**The equity decision — this is the one to really understand.** Two columns,
-`race` and `gender`, are deliberately *pulled out* and **not given to the
-model** (`split_features` returns them separately). A clinical risk score
-shouldn't take race as an input. But we keep them to one side, because we use
-them later to *check* the model for fairness. The key idea: **the same variable
-can be a forbidden input and a required checking-tool at the same time.** You
-don't predict *from* race; you measure fairness *across* race. Age we do keep as
-an input, because age genuinely and legitimately affects readmission risk.
-
-> **If asked:** "Did you use protected attributes?" → "Not as model inputs — a
-> clinical score shouldn't predict from race or gender. I held them out of the
-> model but kept them to audit whether the model's errors and calibration are
-> even across groups."
+**The equity decision — the one to really understand.** Two columns, `race` and
+`gender`, are deliberately *pulled out* and **not given to the model**
+(`split_features` returns them separately). A clinical risk score shouldn't take
+race as an input. But we keep them to one side, because we use them later to
+*check* the model for fairness. The key idea: **the same variable can be a
+forbidden input and a required checking-tool at the same time.** You don't
+predict *from* race; you measure fairness *across* race. Age we do keep as an
+input, because age genuinely and legitimately affects readmission risk.
 
 ---
 
@@ -148,17 +136,12 @@ next week and the score moves, you have a record of what you did. It's the
 standard tool for this, so it's here both for good practice and because
 employers look for it.
 
-> **If asked:** "What's calibration and why bother?" → "A model can rank well but
-> output meaningless probabilities. Calibration makes the numbers trustworthy —
-> when it says 10%, roughly 10% really are readmitted — which is essential if a
-> human is going to act on the probability."
-
 ---
 
 ## 4. Measuring it, and the fairness audit — `src/evaluate.py`
 
 **What it does.** Scores the model on the held-out test set (data it never saw),
-and — the part you care most about — audits whether it behaves fairly across
+and — the part that matters most — audits whether it behaves fairly across
 groups.
 
 **The headline scores, plainly.**
@@ -189,8 +172,8 @@ matches the real rate (calibration). Two ideas do the heavy lifting:
   property for a risk score.
 - **The disparate-impact ratio.** The "four-fifths rule": if the least-flagged
   group is flagged at less than 80% the rate of the most-flagged group, that's a
-  flag. By race it's 0.68 (below 0.80). *But* — and this is the nuance to be able
-  to explain — that mostly reflects genuinely different underlying rates, not
+  flag. By race it's 0.68 (below 0.80). *But* — and this is the nuance worth
+  understanding — that mostly reflects genuinely different underlying rates, not
   bias: the least-flagged group also has the lowest real readmission rate. This
   exposes a real tension: **you cannot have both equal flagging and honest
   probabilities when the groups genuinely differ.** We chose honest probabilities
@@ -198,18 +181,12 @@ matches the real rate (calibration). Two ideas do the heavy lifting:
   the ratio is lower still (0.38), but that's *legitimate* — older patients
   genuinely readmit more, and age is a fair thing to use.
 
-**Why this is the crown jewel.** This is exactly the "equity measure" your own
-work wants. The audit code doesn't care *what* the grouping is — swap the US race
-categories for Māori / Pacific / Other and the same method runs. The model card
-spells out that transfer, including keeping ethnicity out of the model but in the
-audit, framing findings as "where the system under-serves a group" rather than
-"this group is higher-risk", and Māori data-sovereignty governance.
-
-> **If asked:** "Is the model fair?" → "It's well-calibrated within every group,
-> so it's not mis-scoring anyone. Flagging rates differ, but that tracks genuine
-> differences in readmission rate — and calibration and equal-flagging can't both
-> hold when base rates differ, so I chose calibration and documented the
-> trade-off."
+**Why this is the centrepiece.** The audit code doesn't care *what* the grouping
+is — swap the US race categories for Māori / Pacific / Other and the same method
+runs. The model card spells out that transfer to a New Zealand health-equity
+setting, including keeping ethnicity out of the model but in the audit, framing
+findings as "where the system under-serves a group" rather than "this group is
+higher-risk", and Māori data-sovereignty (Te Mana Raraunga) governance.
 
 ---
 
@@ -230,11 +207,6 @@ having a circulatory primary diagnosis. These are exactly the things clinical
 common sense (and the literature) would expect. A model whose explanations make
 sense is one you can trust; if the top driver had been something weird, that
 would have hinted at leakage or a bug.
-
-> **If asked:** "How do you explain the model?" → "SHAP values — they attribute
-> each prediction to its features. The drivers are prior utilisation, discharge
-> destination and age, which are clinically sensible, so the model is leaning on
-> real signal."
 
 ---
 
@@ -274,23 +246,19 @@ The last layer is what makes it engineering rather than a script:
 
 ---
 
-## The story to tell about this project
+## Summary
 
-If you get one minute to describe it: *"I built an end-to-end 30-day readmission
-risk model on public hospital data. The interesting part isn't the accuracy —
-30-day readmission is only weakly predictable from admin data, and I show that
-honestly rather than chasing a leaky high score. The value is in the rigour: I
-prevented patient-level leakage, calibrated the probabilities so they're
-trustworthy, explained the drivers with SHAP, and — the part I care about — built
-a fairness audit that checks calibration and error rates across demographic
-groups, with an explicit account of the calibration-versus-equal-treatment
-trade-off. The whole thing is tested, containerised and served behind an API, and
-the fairness method transfers directly to measuring equity for Māori and Pacific
-populations in a New Zealand health context."*
-
-That paragraph is honest, senior, and covers correctness, communication,
-ethics/governance, and engineering — the things the roles you're targeting
-actually screen for.
+An end-to-end 30-day readmission risk model on public hospital data. The
+interesting part isn't the accuracy — 30-day readmission is only weakly
+predictable from admin data, and the project shows that honestly rather than
+chasing a leaky high score. The value is in the rigour: patient-level leakage is
+prevented, the probabilities are calibrated so they're trustworthy, the drivers
+are explained with SHAP, and — the centrepiece — a fairness audit checks
+calibration and error rates across demographic groups, with an explicit account
+of the calibration-versus-equal-treatment trade-off. The whole thing is tested,
+containerised and served behind an API, and the fairness method transfers
+directly to measuring equity for Māori and Pacific populations in a New Zealand
+health context.
 
 ## Mini-glossary
 

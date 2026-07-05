@@ -14,3 +14,6 @@ mlruns/
 .Renviron
 *.log
 .DS_Store
+
+# private interview-prep notes (full walkthrough + Q&A) - not for public repo
+INTERVIEW-PREP.md
