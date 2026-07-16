@@ -1,4 +1,4 @@
-# How it works — a plain-English tour
+# How it works - a plain-English tour
 
 A guided tour of the whole project: *what* each piece does, *why* it's there, and
 the decisions behind it. It follows the order the code actually runs.
@@ -34,47 +34,47 @@ about making that reproducible and deployable.
 
 ---
 
-## 1. Getting and cleaning the data — `src/data.py`
+## 1. Getting and cleaning the data - `src/data.py`
 
 **What it does.** Downloads the dataset once, then cleans it into a tidy table
 where each row is one hospital stay and there's a single column saying whether
 that stay led to a readmission within 30 days.
 
 **The thing we're predicting.** The raw data records readmission as one of three
-values — within 30 days, after 30 days, or never. We collapse that to a simple
+values - within 30 days, after 30 days, or never. We collapse that to a simple
 yes/no: readmitted within 30 days or not. Thirty days is the number hospitals
 actually care about and get measured on, so that's the target
-(`readmit_30d`). About 9% of stays are a "yes" — the event is rare, which
+(`readmit_30d`). About 9% of stays are a "yes" - the event is rare, which
 matters later.
 
 **The important bit: stopping the model cheating.** This is where most tutorials
 cut corners and we don't. Two guards:
 
 - *Some patients can't be readmitted.* If a patient died or went to hospice,
-  they will never come back — including them would poison the "no" group with
+  they will never come back - including them would poison the "no" group with
   cases that were never *able* to be a "yes". We drop those (`TERMINAL_DISCHARGES`).
 - *The same patient appears many times.* A frequent-flyer patient might have ten
   stays in the data. If some of their stays land in the data we train on and
   others in the data we test on, the model can effectively memorise that person
-  and look better than it really is. That's called **leakage** — the model
+  and look better than it really is. That's called **leakage** - the model
   "peeking" at something it won't have in real life. We fix it by keeping only
   each patient's *first* stay (`drop_duplicates` on the patient id). This alone
   drops the data from ~102k rows to ~70k, and it's the single most important
   correctness decision in the project.
 
 **Tidying the rest.** The three diagnosis columns are raw medical codes (ICD-9)
-with thousands of distinct values — too many to be useful — so we group them
+with thousands of distinct values (too many to be useful), so we group them
 into broad buckets like "circulatory", "respiratory", "diabetes"
 (`_group_diagnosis`). We drop `weight` (missing for 97% of stays, so useless)
-and `payer_code` (insurance type — a stand-in for wealth that we don't want a
+and `payer_code` (insurance type - a stand-in for wealth that we don't want a
 *clinical* risk score leaning on).
 
 ---
 
-## 2. Preparing the features — `src/features.py`
+## 2. Preparing the features - `src/features.py`
 
-**What it does.** A model can't read words like "Cardiology" or a missing value
-— it needs numbers. This file builds the recipe (a scikit-learn *pipeline*) that
+**What it does.** A model can't read words like "Cardiology" or a missing value:
+it needs numbers. This file builds the recipe (a scikit-learn *pipeline*) that
 turns the cleaned table into a numeric matrix, and it does it in a way that can
 be re-applied to new data automatically.
 
@@ -83,12 +83,12 @@ be re-applied to new data automatically.
 - *Numbers* (length of stay, number of prior visits, age): filled in if missing
   and put on a common scale.
 - *Categories* (diagnosis group, medical specialty, admission type): turned into
-  yes/no columns using **one-hot encoding** — plainly, "Cardiology" becomes a
+  yes/no columns using **one-hot encoding** - plainly, "Cardiology" becomes a
   column that's 1 for cardiology stays and 0 otherwise, and similarly for every
   category. Rare categories are folded into one "other" bucket so we don't
   create thousands of near-empty columns.
 
-**The equity decision — the one to really understand.** Two columns, `race` and
+**The equity decision - the one to really understand.** Two columns, `race` and
 `gender`, are deliberately *pulled out* and **not given to the model**
 (`split_features` returns them separately). A clinical risk score shouldn't take
 race as an input. But we keep them to one side, because we use them later to
@@ -99,7 +99,7 @@ input, because age genuinely and legitimately affects readmission risk.
 
 ---
 
-## 3. Training and choosing a model — `src/train.py`
+## 3. Training and choosing a model - `src/train.py`
 
 **What it does.** Tries two different models, picks the better one fairly, then
 makes its outputs trustworthy, and records the run.
@@ -122,15 +122,15 @@ could say "no" every time and be 91% "accurate" while being useless. We tell bot
 models to weight the rare "yes" cases more heavily (`class_weight="balanced"`) so
 they actually try to find them.
 
-**Making the probabilities honest — calibration.** A model can be good at
+**Making the probabilities honest - calibration.** A model can be good at
 *ranking* patients (riskier ones score higher) while its actual numbers are
-nonsense — it might say "80%" for a group that only gets readmitted 30% of the
+nonsense - it might say "80%" for a group that only gets readmitted 30% of the
 time. **Calibration** fixes the numbers so that when the model says 10%, about
 10% of those patients really are readmitted. We wrap the chosen model in
 *isotonic* calibration (`CalibratedClassifierCV`). This matters because we want
 to hand clinicians a *risk*, not just a ranking.
 
-**Recording the run — MLflow.** `mlflow` logs the settings and scores of each
+**Recording the run - MLflow.** `mlflow` logs the settings and scores of each
 run to a local folder (`mlruns/`), like a lab notebook. If you change something
 next week and the score moves, you have a record of what you did. It's the
 standard tool for this, so it's here both for good practice and because
@@ -138,10 +138,10 @@ employers look for it.
 
 ---
 
-## 4. Measuring it, and the fairness audit — `src/evaluate.py`
+## 4. Measuring it, and the fairness audit - `src/evaluate.py`
 
 **What it does.** Scores the model on the held-out test set (data it never saw),
-and — the part that matters most — audits whether it behaves fairly across
+and (the part that matters most) audits whether it behaves fairly across
 groups.
 
 **The headline scores, plainly.**
@@ -151,14 +151,13 @@ groups.
   one higher?" 0.5 is a coin flip, 1.0 is perfect. 0.65 is modest.
 - **Why 0.65 is the honest answer, not a failure.** Both the simple and the fancy
   model land within a whisker of each other. When a simple and a complex model
-  agree, the ceiling is the *data*, not the model — 30-day readmission just isn't
-  very predictable from admin data, and the published literature agrees (~0.64–
-  0.68). A suspiciously high score on this dataset almost always means leakage.
+  agree, the ceiling is the *data*, not the model - 30-day readmission just isn't
+  very predictable from admin data, and the published literature agrees (~0.64 -   0.68). A suspiciously high score on this dataset almost always means leakage.
   Being able to say "this is the real ceiling and here's how I know" is a senior
   signal.
-- **Making it useful anyway — lift.** We flag the top 10% highest-risk patients
+- **Making it useful anyway - lift.** We flag the top 10% highest-risk patients
   (a realistic "how many can the follow-up team actually phone" framing). Among
-  those, readmissions turn up at **2.6× the background rate** — that's the *lift*.
+  those, readmissions turn up at **2.6× the background rate** - that's the *lift*.
   So even a modest model meaningfully focuses a limited team.
 
 **The fairness audit (`equity_table`).** For each group (by race, then by age) we
@@ -168,21 +167,21 @@ matches the real rate (calibration). Two ideas do the heavy lifting:
 
 - **Calibration within groups.** For every race group, the average predicted
   risk lines up with the actual readmission rate. So the model isn't
-  systematically over- or under-scoring any group — the most important fairness
+  systematically over- or under-scoring any group - the most important fairness
   property for a risk score.
 - **The disparate-impact ratio.** The "four-fifths rule": if the least-flagged
   group is flagged at less than 80% the rate of the most-flagged group, that's a
-  flag. By race it's 0.68 (below 0.80). *But* — and this is the nuance worth
-  understanding — that mostly reflects genuinely different underlying rates, not
+  flag. By race it's 0.68 (below 0.80). *But* - and this is the nuance worth
+  understanding - that mostly reflects genuinely different underlying rates, not
   bias: the least-flagged group also has the lowest real readmission rate. This
   exposes a real tension: **you cannot have both equal flagging and honest
   probabilities when the groups genuinely differ.** We chose honest probabilities
   (right for a clinical score) and are transparent about the trade-off. By age
-  the ratio is lower still (0.38), but that's *legitimate* — older patients
+  the ratio is lower still (0.38), but that's *legitimate* - older patients
   genuinely readmit more, and age is a fair thing to use.
 
 **Why this is the centrepiece.** The audit code doesn't care *what* the grouping
-is — swap the US race categories for Māori / Pacific / Other and the same method
+is - swap the US race categories for Māori / Pacific / Other and the same method
 runs. The model card spells out that transfer to a New Zealand health-equity
 setting, including keeping ethnicity out of the model but in the audit, framing
 findings as "where the system under-serves a group" rather than "this group is
@@ -190,18 +189,18 @@ higher-risk", and Māori data-sovereignty (Te Mana Raraunga) governance.
 
 ---
 
-## 5. Explaining the model — `src/explain.py`
+## 5. Explaining the model - `src/explain.py`
 
 **What it does.** Opens the black box: for the predictions, works out how much
 each feature pushed the risk up or down, using **SHAP**.
 
 **SHAP in plain terms.** Imagine the model's output as a score being built up
 from a baseline. SHAP fairly divides the credit (or blame) among the features
-for each individual prediction — "this patient's risk is high *mostly because* of
+for each individual prediction - "this patient's risk is high *mostly because* of
 their many prior inpatient visits, *and a bit because of* their age". Average
 those across everyone and you see the model's overall drivers.
 
-**What it found — and why that's reassuring.** The top drivers are prior
+**What it found - and why that's reassuring.** The top drivers are prior
 inpatient visits, where the patient was discharged to, age, length of stay, and
 having a circulatory primary diagnosis. These are exactly the things clinical
 common sense (and the literature) would expect. A model whose explanations make
@@ -210,10 +209,10 @@ would have hinted at leakage or a bug.
 
 ---
 
-## 6. Serving it — `src/api.py`
+## 6. Serving it - `src/api.py`
 
 **What it does.** Wraps the trained model in a small web service (**FastAPI**) so
-another system could send a patient's details and get back a risk score — this is
+another system could send a patient's details and get back a risk score - this is
 the difference between a model that sits in a notebook and one that could
 actually be used.
 
@@ -223,7 +222,7 @@ anything missing is left blank and handled by the pipeline. It returns a
 calibrated probability and a simple band (low / elevated / high). There's also a
 `/health` check so a deployment system can tell the service is alive. We tested
 it on a low-risk and a high-risk example and it returned 0.07 and 0.23
-respectively — sensible and clearly separated.
+respectively - sensible and clearly separated.
 
 ---
 
@@ -237,23 +236,23 @@ The last layer is what makes it engineering rather than a script:
   missing values are handled, the sensitive columns really are held out). If a
   future change breaks something, the tests catch it.
 - **CI (`.github/workflows/ci.yml`)** runs those tests and a code-style check
-  automatically on every push to GitHub — so the repo advertises that it's tested
+  automatically on every push to GitHub - so the repo advertises that it's tested
   and clean.
 - **`Dockerfile`** packages the whole thing into a container that trains the
   model and serves the API, so it runs identically on any machine.
 - **`.gitignore`** keeps the virtual environment, data, model files and caches
-  out of the repository — and, importantly, would keep any secret out too.
+  out of the repository - and, importantly, would keep any secret out too.
 
 ---
 
 ## Summary
 
 An end-to-end 30-day readmission risk model on public hospital data. The
-interesting part isn't the accuracy — 30-day readmission is only weakly
+interesting part isn't the accuracy - 30-day readmission is only weakly
 predictable from admin data, and the project shows that honestly rather than
 chasing a leaky high score. The value is in the rigour: patient-level leakage is
 prevented, the probabilities are calibrated so they're trustworthy, the drivers
-are explained with SHAP, and — the centrepiece — a fairness audit checks
+are explained with SHAP, and (the centrepiece) a fairness audit checks
 calibration and error rates across demographic groups, with an explicit account
 of the calibration-versus-equal-treatment trade-off. The whole thing is tested,
 containerised and served behind an API, and the fairness method transfers
@@ -272,7 +271,7 @@ health context.
 - **Class imbalance:** when one outcome is rare (9% here), which needs handling or
   the model ignores it.
 - **Calibration:** making the predicted probabilities mean what they say.
-- **ROC-AUC:** ranking ability — chance a real "yes" scores above a real "no".
+- **ROC-AUC:** ranking ability - chance a real "yes" scores above a real "no".
 - **Lift:** how much better than random your flagged group is at containing real
   cases.
 - **Disparate impact / four-fifths rule:** a fairness check on whether groups are
